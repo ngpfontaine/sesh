@@ -17,7 +17,7 @@ const express = require("express"),
   FileStore = require("session-file-store")(session),
   connect = require("connect-ensure-login"),
   passport = require("passport"),
-  // cookieParser = require("cookie-parser"),
+  cookieParser = require("cookie-parser"),
   Strategy = require("passport-local").Strategy,
   app = express(),
   port = 3341,
@@ -45,7 +45,7 @@ passport.use(new Strategy(
 ))
 
 app.use(require("body-parser").urlencoded({ extended: true }))
-// app.use(cookieParser("secret"))
+app.use(cookieParser("secret"))
 
 // Express Session
 app.set("trust proxy", 1)
@@ -54,7 +54,8 @@ app.use(session({
   name: "name-" + nanoid(6),
   store: new FileStore(),
   secret: "secret",
-  domain: "sesh.junk.cool",
+  // domain: "sesh.junk.cool",
+  path: "/",
   cookie: {
     secure: true,
     httpOnly: true
@@ -80,7 +81,11 @@ app.use(passport.session())
 // Send pre-populated login form
 app.get("/", function(req,res) {
   // res.cookie("tc-01","secure-httpOnly", {secure: true, httpOnly: true})
-  // res.cookie("tc-02","secure-httpOnly-signed", {secure: true, httpOnly: true, signed: true})
+  res.cookie("test-cookie-secure-httpOnly-and-signed","secret", {secure: true, httpOnly: true, signed: true})
+  res.setHeader("Content-Type", "text/html")
+  res.setHeader("Strict-Transport-Security", "max-age=31536000;includeSubdomains")
+  res.setHeader("X-Frame-Options", "deny")
+  res.setHeader("X-Content-Type-Options", "nosniff")
   res.send("<html><head><meta charset='UTF-8'></head><body>" + 
     "<form action='/login' method='post'>" +
       "<input name='username' value='username'><br>" +
@@ -104,6 +109,10 @@ app.get("/success",
   connect.ensureLoggedIn("/cookie-fail"),
   function(req,res) {
     res.setHeader("Content-Type", "text/html")
+    res.setHeader("Strict-Transport-Security", "max-age=31536000;includeSubdomains")
+    res.setHeader("X-Frame-Options", "deny")
+    res.setHeader("X-Content-Type-Options", "nosniff")
+    res.setHeader("Content-Type", "text/html")
     res.send("Authentication Success<br>" +
       "<a href='./'>Back</a><br>")
   })
@@ -115,8 +124,14 @@ app.get("/fail",
 
 // Cookie auth failed
 app.get("/cookie-fail",
-  function(req,res) { res.send("Authentication Success, But Cookie Authentication Fail<br>" +
-    "<a href='./'>Back</a>") })
+  function(req,res) {
+    res.setHeader("Content-Type", "text/html")
+    res.setHeader("Strict-Transport-Security", "max-age=31536000;includeSubdomains")
+    res.setHeader("X-Frame-Options", "deny")
+    res.setHeader("X-Content-Type-Options", "nosniff")
+    res.send("Authentication Success, But Cookie Authentication Fail<br>" +
+    "<a href='./'>Back</a>")
+  })
 
 app.listen(port, (err) => {
   if (err) { return console.log('node: something bad happened', err) }
