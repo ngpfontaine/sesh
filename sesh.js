@@ -52,9 +52,9 @@ app.set("trust proxy", 1)
 app.use(session({
   proxy: true,
   name: "name-" + nanoid(6),
-  // store: new FileStore(),
+  store: new FileStore(),
   secret: "secret",
-  domain: "node.nicfontaine.com",
+  domain: "sesh.junk.cool",
   cookie: {
     secure: true,
     httpOnly: true
@@ -101,7 +101,7 @@ app.post("/login",
 
 // Authentication required to view
 app.get("/success",
-  // connect.ensureLoggedIn("/cookie-fail"),
+  connect.ensureLoggedIn("/cookie-fail"),
   function(req,res) {
     res.setHeader("Content-Type", "text/html")
     res.send("Authentication Success<br>" +
