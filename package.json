@@ -7,7 +7,6 @@
     "body-parser": "^1.17.1",
     "connect-ensure-login": "^0.1.1",
     "cookie-parser": "^1.4.3",
-    "cookie-session": "^2.0.0-beta.3",
     "express": "^4.16.3",
     "express-session": "^1.15.5",
     "nanoid": "^1.0.2",
