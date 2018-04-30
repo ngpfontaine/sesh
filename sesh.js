@@ -10,59 +10,77 @@ If no or invalid cookie, redirect to /cookie-fail
 */
 
 "use strict"
+
 const express = require("express"),
   session = require("express-session"),
+  cookieSession = require("cookie-session"),
   FileStore = require("session-file-store")(session),
   connect = require("connect-ensure-login"),
   passport = require("passport"),
+  // cookieParser = require("cookie-parser"),
   Strategy = require("passport-local").Strategy,
   app = express(),
-  port = 3340,
+  port = 3341,
   nanoid = require('nanoid'),
   db = require('./db')
 
-  passport.serializeUser(function(user, cb) {
-    cb(null, user.id)
+passport.serializeUser(function(user, cb) {
+  cb(null, user.id)
+})
+passport.deserializeUser(function(id, cb) {
+  db.users.findById(id, function (err, user) {
+    if (err) { return cb(err) }
+    cb(null, user)
   })
-  passport.deserializeUser(function(id, cb) {
-    db.users.findById(id, function (err, user) {
-      if (err) { return cb(err) }
-      cb(null, user)
+})
+passport.use(new Strategy(
+  function(username, password, cb) {
+    db.users.findByUsername(username, function(err, user) {
+      if (err) {return cb(err) }
+      if (!user) { return cb(null, false) }
+      if (user.password != password) { return cb(null, false) }
+      return cb(null, user) // Sucess
     })
-  })
-  passport.use(new Strategy(
-    function(username, password, cb) {
-      db.users.findByUsername(username, function(err, user) {
-        if (err) {return cb(err) }
-        if (!user) { return cb(null, false) }
-        if (user.password != password) { return cb(null, false) }
-        return cb(null, user) // Sucess
-      })
-    }
-  ))
+  }
+))
 
-app.use(require('body-parser').urlencoded({ extended: true }))
+app.use(require("body-parser").urlencoded({ extended: true }))
+// app.use(cookieParser("secret"))
 
-// app.set("trust proxy", 1)
+// Express Session
+app.set("trust proxy", 1)
 app.use(session({
+  proxy: true,
   name: "name-" + nanoid(6),
-  secret: "secret-" + nanoid(6),
-  saveUninitialized: false,
-  // resave: true,
-  store: new FileStore(),
-  // proxy: true,
+  // store: new FileStore(),
+  secret: "secret",
   domain: "node.nicfontaine.com",
   cookie: {
-    // secure: true,
-    // httpOnly: true
-  }
+    secure: true,
+    httpOnly: true
+  },
+  saveUninitialized: true,
+  resave: false
 }))
+
+
+// Cookie Session
+// app.use(cookieSession({
+//   name: "cookieSession",
+//   keys: ["secret"],
+//   secure: true,
+//   httpOnly: true, // default
+//   signed: true, //default
+//   overwrite: true //default
+// }))
 
 app.use(passport.initialize())
 app.use(passport.session())
 
 // Send pre-populated login form
 app.get("/", function(req,res) {
+  // res.cookie("tc-01","secure-httpOnly", {secure: true, httpOnly: true})
+  // res.cookie("tc-02","secure-httpOnly-signed", {secure: true, httpOnly: true, signed: true})
   res.send("<html><head><meta charset='UTF-8'></head><body>" + 
     "<form action='/login' method='post'>" +
       "<input name='username' value='username'><br>" +
@@ -83,11 +101,12 @@ app.post("/login",
 
 // Authentication required to view
 app.get("/success",
-  connect.ensureLoggedIn("/cookie-fail"),
+  // connect.ensureLoggedIn("/cookie-fail"),
   function(req,res) {
     res.setHeader("Content-Type", "text/html")
     res.send("Authentication Success<br>" +
-      "<a href='./'>Back</a>") })
+      "<a href='./'>Back</a><br>")
+  })
 
 // Auth failed
 app.get("/fail",
